@@ -37,7 +37,7 @@ public:
     class SendConfigCommand : public Command {
     public:
         SendConfigCommand(FPPZcppPlugin *p) : Command("SendConfig"), plugin(p) {
-             args.push_back(CommandArg("sendConfig", "bool", "Send Configs to Controllers").setDefaultValue("true"));
+             args.push_back(CommandArg("SendConfig", "bool", "Send Configs to Controllers").setDefaultValue("true"));
         }
         
         virtual std::unique_ptr<Command::Result> run(const std::vector<std::string> &args) override {
@@ -63,7 +63,7 @@ public:
                 std::string p1 = req.get_path_pieces()[x];
                 vals.push_back(p1);
             }
-            //setBrightness(vals);
+            sendConfigFileNow();
         }
         
         std::string v = "100";

@@ -1,25 +1,11 @@
 
 
 <script type='text/javascript'>
-function sliderAdjusted() {
-    var slider = document.getElementById("brightnessSlider");
-    var output = document.getElementById("currentSliderValue");
-    var val = slider.value;
-    output.innerHTML = "Current brightness: " + val; // Display the default slider value
-    
-    var URL = "/api/plugin-apis/Brightness/" + val;
+function gobutton() {
+    var URL = "/api/plugin-apis/SendConfig/true";
     $.get(URL);
 }
-function onLoadGetBrightness() {
-    var URL = "/api/plugin-apis/Brightness";
-    $.get(URL, function (data, status){
-          var slider = document.getElementById("brightnessSlider");
-          var output = document.getElementById("currentSliderValue");
-          slider.value = data;
-          output.innerHTML = "Current brightness: " + data;
-    });
-}
-$(document).ready(function() {onLoadGetBrightness()});
+
 </script>
 <style>
 .slidecontainer {
@@ -65,21 +51,15 @@ $(document).ready(function() {onLoadGetBrightness()});
 
 <div id="global" class="settings">
 <fieldset>
-<legend>Brightness Plugin</legend>
+<legend>FPP ZCPP Plugin</legend>
 
-<div id="currentSliderValue">Current brightness: 100</div>
-<input type="range" min="0" max="200" value="100" class="slider" id="brightnessSlider" oninput="sliderAdjusted()" >
+<input type="button" value="Send Configs" class="button" id="go" oninput="gobutton()" >
 
 
 <p>
 <p>
 The Brightness plugin also provides a REST api and MQTT api for controlling the brightness.
 <p>
-For REST, use a URL like http://{ip}/api/plugin-apis/Brightness/100 to set the brightness
-to 100.
-<p>
-For MQTT, the sub-topic is "/Brightness" and the payload would be the brightness.
-<p>
-If  FPP is running in Master mode, changes to the master brightness will also be sent to all the remotes that also have the Brightness plugin installed.
+
 </fieldset>
 </div>
