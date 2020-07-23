@@ -1,2 +1,2 @@
-# fpp-zcpp
+# fpp-zcpp-plugin
 FPP ZCPP Plugin
