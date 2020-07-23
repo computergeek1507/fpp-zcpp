@@ -1,0 +1,20 @@
+{
+	"repoName": "fpp-zcpp-plugin",
+	"name": "ZCPP Plugin for FPP",
+	"author": "Scott Hanson (computergeek1507)",
+	"description": "This plugin allows ZCPP configurations to be sent to the controllers.",
+	"homeURL": "https://github.com/computergeek1507/fpp-zcpp-plugin",
+	"srcURL": "https://github.com/computergeek1507/fpp-zcpp-plugin.git",
+	"bugURL": "https://github.com/computergeek1507/fpp-zcpp-plugin/issues",
+	"allowUpdates": 1,
+	"versions": [
+		{
+			"minFPPVersion": "4.0",
+			"maxFPPVersion": "0",
+			"branch": "master",
+			"sha": "",
+			"dependencies": {
+			}
+		}
+	]
+}
