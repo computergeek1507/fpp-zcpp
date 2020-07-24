@@ -1,6 +1,20 @@
 
 #include "ZCPPOutput.h"
 
+
+#include <stdlib.h>
+#include <list>
+#include <string>
+#include <cstdint>
+
+
+#include <iostream> 
+#include <istream>
+#include <ostream>
+
+#include <fstream>
+#include <filesystem>
+
 ZCPPOutput::ZCPPOutput()
 {
 
@@ -12,7 +26,6 @@ ZCPPOutput::~ZCPPOutput()
 
 bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
 {
-	
 	bool worked = readFile(zcppFile);
 	if(!worked)
 		return false;
@@ -21,6 +34,8 @@ bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
 	replaceAll(ip, ".zcpp", "");
 	replaceAll(ip, "_", ".");
 	_ipAddress = ip;
+	
+	return true;
 }
 
 bool ZCPPOutput::readFile(std::string const& file)
@@ -105,6 +120,7 @@ bool ZCPPOutput::readFile(std::string const& file)
 		std::cout << ex.what();
 		return false;
 	}
+	return false;
 }
 
 bool ZCPPOutput::SendConfig()
@@ -122,11 +138,13 @@ bool ZCPPOutput::SendConfig()
 		socket.open(udp::v4());
 
 		sendConfigFiles(socket, remote_endpoint);
+		return true;
 	}
 	catch(std::exception ex)
 	{
 		std::cout << ex.what();
 	}
+	return false;
 }
 
 void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint)

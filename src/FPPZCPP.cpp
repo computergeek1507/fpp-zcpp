@@ -8,6 +8,8 @@
 #include <istream>
 #include <ostream>
 
+#include <iostream> 
+
 #include <filesystem>
 
 #include <unistd.h>
@@ -39,6 +41,7 @@ private:
 public:
 
     FPPZcppPlugin() : FPPPlugin("fpp-zcpp") {
+		printf ("FPPZcppPlugin Starting\n");
         readFiles();
         sendConfigFileNow();
         registerCommand();
@@ -94,66 +97,63 @@ public:
     
     void sendConfigFileNow(bool sendConfig = true) {
         for(auto & output: _zcppOutputs)
-		{
-			output->SendConfig();
-		}
+        {
+			printf ("Sending Config %s\n" ,output->GetIPAddress());
+            output->SendConfig();
+        }
     }
 
-	std::vector<std::string> getZCPPFile(std::string const& folder)
-	{
-		std::vector<std::string> files;
-		std::string path(folder);
-		std::string ext(".zcpp");
-		for (auto& p : std::filesystem::recursive_directory_iterator(path))
-		{
-			if (p.path().extension() == ext)
-			{
-				files.push_back(p.path().string());
-			}
-		}
-		return files;
-	}
-	
-	void readFiles()
-	{
-		std::vector<std::string> files = getZCPPFile("/home/fpp/media/config/");
-		if (files.size() > 0)
-		{
-			for(auto const& file: files)
-			{
-				std::unique_ptr<ZCPPOutput> output = std::make_unique<ZCPPOutput>();
-				bool worked = output->ReadConfig(file);
-				if(worked)
-				{
-					_zcppOutputs.push_back(std::move(output));
-				}
-			}
-		}
+    std::vector<std::string> getZCPPFile(std::string const& folder)
+    {
+		printf ("Searching %s\n" ,folder);
+        std::vector<std::string> files;
+        std::string path(folder);
+        std::string ext(".zcpp");
+        for (auto& p : std::filesystem::recursive_directory_iterator(path))
+        {
+            if (p.path().extension() == ext)
+            {
+                files.push_back(p.path().string());
+            }
+        }
+        return files;
+    }
+    
+    void readFiles()
+    {
+        std::vector<std::string> files = getZCPPFile("/home/fpp/media/config/");
 		std::vector<std::string> files2 = getZCPPFile("/home/fpp/media/upload/");
-		if (files2.size() > 0)
-		{
-			for(auto const& file: files2)
-			{
-				std::unique_ptr<ZCPPOutput> output = std::make_unique<ZCPPOutput>();
-				bool worked = output->ReadConfig(file);
-				if(worked)
-				{
-					_zcppOutputs.push_back(std::move(output));
-				}
-			}
+		files.insert(files.end(), files2.begin(), files2.end());
+        if (files.size() > 0)
+        {
+            for(auto const& file: files)
+            {
+				printf ("Reading %s\n" ,file);
+                std::unique_ptr<ZCPPOutput> output = std::make_unique<ZCPPOutput>();
+                bool worked = output->ReadConfig(file);
+                if(worked)
+                {
+					printf ("Adding Controller %s\n" ,output->GetIPAddress());
+                    _zcppOutputs.push_back(std::move(output));
+                }
+            }
+        }
+		else{
+			printf ("No ZCPP Configs found\n");
 		}
-	}
-	
-	std::string getIPs()
-	{
-		std::string ips;
-		for(auto & out: _zcppOutputs)
-		{
-			ips += out->GetIPAddress();
-			ips += ",";
-		}
-		return ips;
-	} 
+    }
+    
+    std::string getIPs()
+    {
+        std::string ips;
+        for(auto & out: _zcppOutputs)
+        {
+            ips += out->GetIPAddress();
+            ips += ",";
+        }
+		printf ("IP Adresses %s\n" ,ips);
+        return ips;
+    } 
 };
 
 
