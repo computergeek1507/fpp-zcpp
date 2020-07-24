@@ -15,7 +15,7 @@
 #include <fstream>
 #include <filesystem>
 
-ZCPPOutput::ZCPPOutput()
+ZCPPOutput::ZCPPOutput() : _startChannel(0), _channelCount(0)
 {
 }
 
@@ -40,9 +40,8 @@ bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
 }
 
 
-bool ZCPPOutput::SendConfig()
+bool ZCPPOutput::SendConfig( bool sendExtra)
 {
-	
 	try
 	{
 		if(_ipAddress.empty())
@@ -55,7 +54,7 @@ bool ZCPPOutput::SendConfig()
 		udp::endpoint remote_endpoint = udp::endpoint(address::from_string(_ipAddress), ZCPP_PORT);
 		socket.open(udp::v4());
 
-		sendConfigFile(socket, remote_endpoint);
+		sendConfigFile(socket, remote_endpoint, sendExtra);
 		return true;
 	}
 	catch(std::exception ex)
@@ -142,6 +141,8 @@ bool ZCPPOutput::readFile(std::string const& file)
 			std::cout << "ZCPP Model data file loaded." << file << "\n";
 		}
 		inFile.close();
+
+		ExtractUsedChannelsFromModelData();
 		return true;
 	}
 	catch (std::exception ex)
@@ -151,9 +152,9 @@ bool ZCPPOutput::readFile(std::string const& file)
 	}
 	return false;
 }
-void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint)
+
+void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint, bool sendExtra)
 {
-	bool sendExtra = true;
 	for (auto it = _modelData.begin(); it != _modelData.end(); ++it) {
 		auto it2 = it;
 		++it2;
@@ -187,6 +188,30 @@ void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remot
 
 			std::cout << "Sent ExtraData Payload --- " << sent << "\n";
 		}
+	}
+}
+
+void ZCPPOutput::ExtractUsedChannelsFromModelData() 
+{
+	_channelCount = 1;
+
+	for (const auto& it : _modelData) {
+		int ports = it->Configuration.ports;
+		if (ports > ZCPP_CONFIG_MAX_PORT_PER_PACKET) {
+			std::cout << "ZCPP file corrupt. Abandoning read.\n";
+			_channelCount = 1;
+			return;
+		}
+		ZCPP_PortConfig* port = it->Configuration.PortConfig;
+		for (int i = 0; i < ports; i++) {
+			long start = htonl(port->startChannel);
+			long len = htonl(port->channels);
+			if (start + len - 1 > _channelCount) {
+				_channelCount = start + len;
+			}
+			port++;
+		}
+		std::cout << "    End of config packet ... channels " << _channelCount << "\n";
 	}
 }
 

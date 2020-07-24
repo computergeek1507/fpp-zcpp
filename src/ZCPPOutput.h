@@ -26,17 +26,21 @@ public:
     ZCPPOutput();
     ~ZCPPOutput();
 
-    bool SendConfig();
+    bool SendConfig(bool sendExtra = true);
     bool ReadConfig(std::string const& file);
     std::string GetIPAddress(){return _ipAddress;}
+    unsigned int GetChannelCount(){return _channelCount;}
 
 private:
 
+    unsigned int _startChannel;
+    unsigned int _channelCount;
     std::string _ipAddress;
     std::list<ZCPP_packet_t*> _extraConfig;
     std::list<ZCPP_packet_t*> _modelData;
     
+    void ExtractUsedChannelsFromModelData();
     void replaceAll(std::string& str, const std::string& from, const std::string& to);
-    void sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint);
+    void sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint, bool sendExtra);
     bool readFile(std::string const& file);
 };

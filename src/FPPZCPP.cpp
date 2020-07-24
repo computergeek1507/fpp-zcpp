@@ -39,53 +39,21 @@
 class FPPZcppPlugin : public FPPPlugin, public httpserver::http_resource {
 private:
     std::vector<std::unique_ptr <ZCPPOutput>> _zcppOutputs;
+    int sequenceCount;
 
 public:
 
-    FPPZcppPlugin() : FPPPlugin("fpp-zcpp") {
-		printf ("FPPZcppPlugin Starting\n");
+    FPPZcppPlugin() : FPPPlugin("fpp-zcpp-plugin"), sequenceCount(0) {
+        printf ("FPPZcppPlugin Starting\n");
         readFiles();
         sendConfigFileNow();
-        registerCommand();
     }
     virtual ~FPPZcppPlugin() 
     {
          _zcppOutputs.clear();
     }
-    
-    class SendConfigCommand : public Command {
-    public:
-        SendConfigCommand(FPPZcppPlugin *p) : Command("SendConfig"), plugin(p) {
-             args.push_back(CommandArg("sendconfig", "bool", "Send Configs to Controllers").setDefaultValue("true")
-			 .setGetAdjustableValueURL("api/plugin-apis/SendConfig"));
-        }
-        
-        virtual std::unique_ptr<Command::Result> run(const std::vector<std::string> &args) override {
-            bool sendconfigs = true;
-            if (args.size() >= 1) {
-                sendconfigs= args[1] == "true" || args[1] == "1";
-            }
-            plugin->sendConfigFileNow(sendconfigs);
-            return std::make_unique<Command::Result>("Sending Configs");
-        }
-        FPPZcppPlugin *plugin;
-    };
-    void registerCommand() {
-        CommandManager::INSTANCE.addCommand(new SendConfigCommand(this));
-    }
-    
+
     virtual const std::shared_ptr<httpserver::http_response> render_GET(const httpserver::http_request &req) override {
-        std::string p0 = req.get_path_pieces()[0];
-        int plen = req.get_path_pieces().size();
-        if (plen > 1) {
-            std::vector<std::string> vals;
-            for (int x = 1; x < req.get_path_pieces().size(); x++) {
-                std::string p1 = req.get_path_pieces()[x];
-                vals.push_back(p1);
-            }
-            sendConfigFileNow();
-        }
-        
         std::string v = getIPs();
         return std::shared_ptr<httpserver::http_response>(new httpserver::string_response(v, 200));
     }
@@ -95,20 +63,49 @@ public:
 #else
     virtual void modifySequenceData(int ms, uint8_t *seqData) override {
 #endif
-
-    }
-    
-    void sendConfigFileNow(bool sendConfig = true) {
-        for(auto & output: _zcppOutputs)
+        if(sequenceCount==0)
+            sendConfigFileNow();
+        ++sequenceCount;
+        if(sequenceCount > 3000)
         {
-            printf ("Sending Config %s\n" ,output->GetIPAddress().c_str());
-            output->SendConfig();
+            sendConfigFileNow();
+            sequenceCount = 1;
         }
     }
 
+    virtual void playlistCallback(const Json::Value &playlist, const std::string &action, const std::string &section, int item) {
+        if (settings["Start"] == "PlaylistStart" && action == "start") {
+            sendConfigFileNow();
+        }  
+    }
+    
+    void sendConfigFileNow(bool sendExtra = true) {
+        for(auto & output: _zcppOutputs)
+        {
+            printf ("Sending Config %s\n" ,output->GetIPAddress().c_str());
+            output->SendConfig(sendExtra);
+        }
+    }
+    
+    void saveDataToFile()
+    {
+        std::ofstream outfile;
+        outfile.open ("/home/fpp/media/config/fpp-zcpp-plugin");
+        
+        for(auto & out: _zcppOutputs)
+        {
+            outfile << out->GetIPAddress();
+            outfile <<  ",";
+            outfile << out->GetChannelCount();
+            outfile <<  "\n";
+        }
+        outfile.close();
+    }
+
+
     std::vector<std::string> getZCPPFile(std::string const& folder)
     {
-		printf ("Searching %s\n" ,folder.c_str());
+        printf ("Searching %s\n" ,folder.c_str());
         std::vector<std::string> files;
         std::string path(folder);
         std::string ext(".zcpp");
@@ -125,13 +122,13 @@ public:
     void readFiles()
     {
         std::vector<std::string> files = getZCPPFile("/home/fpp/media/config/");
-		std::vector<std::string> files2 = getZCPPFile("/home/fpp/media/upload/");
-		files.insert(files.end(), files2.begin(), files2.end());
+        std::vector<std::string> files2 = getZCPPFile("/home/fpp/media/upload/");
+        files.insert(files.end(), files2.begin(), files2.end());
         if (files.size() > 0)
         {
             for(auto const& file: files)
             {
-				printf ("Reading %s\n" ,file.c_str());
+                printf ("Reading %s\n" ,file.c_str());
                 std::unique_ptr<ZCPPOutput> output = std::make_unique<ZCPPOutput>();
                 bool worked = output->ReadConfig(file);
                 if(worked)
@@ -141,9 +138,11 @@ public:
                 }
             }
         }
-		else{
-			printf ("No ZCPP Configs found\n");
-		}
+        else{
+            printf ("No ZCPP Configs found\n");
+        }
+        
+        saveDataToFile();
     }
     
     std::string getIPs()
@@ -154,7 +153,7 @@ public:
             ips += out->GetIPAddress();
             ips += ",";
         }
-		printf ("IP Adresses %s\n" ,ips.c_str());
+        printf ("IP Adresses %s\n" ,ips.c_str());
         return ips;
     } 
 };
