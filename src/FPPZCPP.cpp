@@ -129,6 +129,19 @@ public:
 				}
 			}
 		}
+		std::vector<std::string> files2 = getZCPPFile("/home/fpp/media/upload/");
+		if (files2.size() > 0)
+		{
+			for(auto const& file: files2)
+			{
+				std::unique_ptr<ZCPPOutput> output = std::make_unique<ZCPPOutput>();
+				bool worked = output->ReadConfig(file);
+				if(worked)
+				{
+					_zcppOutputs.push_back(std::move(output));
+				}
+			}
+		}
 	}
 	
 	std::string getIPs()
