@@ -3,7 +3,7 @@ include /opt/fpp/src/makefiles/common/setup.mk
 all: libfpp-zcpp-plugin.so
 debug: all
 
-OBJECTS_fpp_ZCPP_so += src/FPPZCPP.o
+OBJECTS_fpp_ZCPP_so += src/FPPZCPP.o src/ZCPPOutput.o
 LIBS_fpp_ZCPP_so += -L/opt/fpp/src -lfpp
 CXXFLAGS_src/FPPZCPP.o += -I/opt/fpp/src
 

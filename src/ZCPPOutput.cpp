@@ -17,7 +17,7 @@
 
 ZCPPOutput::ZCPPOutput()
 {
-
+}
 
 ZCPPOutput::~ZCPPOutput()
 {
@@ -26,6 +26,7 @@ ZCPPOutput::~ZCPPOutput()
 
 bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
 {
+	
 	bool worked = readFile(zcppFile);
 	if(!worked)
 		return false;
@@ -37,6 +38,34 @@ bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
 	
 	return true;
 }
+
+
+bool ZCPPOutput::SendConfig()
+{
+	
+	try
+	{
+		if(_ipAddress.empty())
+			return false;
+		
+		asio::io_context io_context;
+
+		asio::io_service io_service;
+		udp::socket socket(io_service);
+		udp::endpoint remote_endpoint = udp::endpoint(address::from_string(_ipAddress), ZCPP_PORT);
+		socket.open(udp::v4());
+
+		sendConfigFile(socket, remote_endpoint);
+		return true;
+	}
+	catch(std::exception ex)
+	{
+		std::cout << ex.what();
+	}
+	
+	return false;
+}
+
 
 bool ZCPPOutput::readFile(std::string const& file)
 {
@@ -122,31 +151,6 @@ bool ZCPPOutput::readFile(std::string const& file)
 	}
 	return false;
 }
-
-bool ZCPPOutput::SendConfig()
-{
-	try
-	{
-		if(_ipAddress.empty())
-			return false;
-		
-		asio::io_context io_context;
-
-		asio::io_service io_service;
-		udp::socket socket(io_service);
-		udp::endpoint remote_endpoint = udp::endpoint(address::from_string(_ipAddress), ZCPP_PORT);
-		socket.open(udp::v4());
-
-		sendConfigFiles(socket, remote_endpoint);
-		return true;
-	}
-	catch(std::exception ex)
-	{
-		std::cout << ex.what();
-	}
-	return false;
-}
-
 void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint)
 {
 	bool sendExtra = true;

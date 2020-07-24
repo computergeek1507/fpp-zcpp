@@ -12,6 +12,8 @@
 
 #include <filesystem>
 
+#include <vector>
+
 #include <unistd.h>
 #include <termios.h>
 #include <chrono>
@@ -54,7 +56,8 @@ public:
     class SendConfigCommand : public Command {
     public:
         SendConfigCommand(FPPZcppPlugin *p) : Command("SendConfig"), plugin(p) {
-             args.push_back(CommandArg("SendConfig", "bool", "Send Configs to Controllers").setDefaultValue("true"));
+             args.push_back(CommandArg("sendconfig", "bool", "Send Configs to Controllers").setDefaultValue("true")
+			 .setGetAdjustableValueURL("api/plugin-apis/SendConfig"));
         }
         
         virtual std::unique_ptr<Command::Result> run(const std::vector<std::string> &args) override {
@@ -98,14 +101,14 @@ public:
     void sendConfigFileNow(bool sendConfig = true) {
         for(auto & output: _zcppOutputs)
         {
-			printf ("Sending Config %s\n" ,output->GetIPAddress());
+            printf ("Sending Config %s\n" ,output->GetIPAddress().c_str());
             output->SendConfig();
         }
     }
 
     std::vector<std::string> getZCPPFile(std::string const& folder)
     {
-		printf ("Searching %s\n" ,folder);
+		printf ("Searching %s\n" ,folder.c_str());
         std::vector<std::string> files;
         std::string path(folder);
         std::string ext(".zcpp");
@@ -128,12 +131,12 @@ public:
         {
             for(auto const& file: files)
             {
-				printf ("Reading %s\n" ,file);
+				printf ("Reading %s\n" ,file.c_str());
                 std::unique_ptr<ZCPPOutput> output = std::make_unique<ZCPPOutput>();
                 bool worked = output->ReadConfig(file);
                 if(worked)
                 {
-					printf ("Adding Controller %s\n" ,output->GetIPAddress());
+                    printf ("Adding Controller %s\n" ,output->GetIPAddress().c_str());
                     _zcppOutputs.push_back(std::move(output));
                 }
             }
@@ -151,7 +154,7 @@ public:
             ips += out->GetIPAddress();
             ips += ",";
         }
-		printf ("IP Adresses %s\n" ,ips);
+		printf ("IP Adresses %s\n" ,ips.c_str());
         return ips;
     } 
 };

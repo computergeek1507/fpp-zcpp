@@ -11,6 +11,8 @@
 #include <list>
 #include <string>
 #include <cstdint>
+
+
 #include "ZCPP.h"
 
 #include "asio.hpp"
@@ -19,16 +21,17 @@ using asio::ip::tcp;
 using asio::ip::udp;
 using asio::ip::address;
 
-class ZCPPOutput  {
+class ZCPPOutput {
 public:
     ZCPPOutput();
-    virtual ~ZCPPOutput();
+    ~ZCPPOutput();
 
     bool SendConfig();
     bool ReadConfig(std::string const& file);
     std::string GetIPAddress(){return _ipAddress;}
 
 private:
+
     std::string _ipAddress;
     std::list<ZCPP_packet_t*> _extraConfig;
     std::list<ZCPP_packet_t*> _modelData;

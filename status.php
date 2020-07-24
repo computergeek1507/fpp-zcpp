@@ -2,7 +2,7 @@
 
 <script type='text/javascript'>
 function gobutton() {
-    var URL = "/api/plugin-apis/SendConfig/true";
+    var URL = "/api/plugin-apis/sendconfig/true";
     $.get(URL);
 }
 
