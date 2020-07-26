@@ -70,7 +70,7 @@ public:
 			if(sequenceCount==0)
 				sendConfigFileNow();
 			++sequenceCount;
-			if(sequenceCount > 3000)
+			if(sequenceCount > 3000)//only resend config every 75 sec at 40fps or 140 at 20 sec, about every minute or two  
 			{
 				sendConfigFileNow();
 				sequenceCount = 1;
@@ -106,6 +106,7 @@ public:
     
     void saveDataToFile()
     {
+	//Save obj setting to text file for PHP gui
         std::ofstream outfile;
         outfile.open ("/home/fpp/media/config/fpp-zcpp-plugin");
         
@@ -145,6 +146,7 @@ public:
         files.insert(files.end(), files2.begin(), files2.end());
         if (files.size() > 0)
         {
+	    //loop thought file list reading .zcpp files and if valid add new ZCPP obj
             for(auto const& file: files)
             {
                 printf ("Reading %s\n" ,file.c_str());
@@ -160,10 +162,12 @@ public:
         else{
             printf ("No ZCPP Configs found\n");
         }
-
+	//read start channel settings from JSON setting file. 
+	//TODO: write php web GUI to populate the JSON file
         if (LoadJsonFromFile("/home/fpp/media/config/fpp-zcpp-plugin.json", config)) {
             for(auto & out: _zcppOutputs)
             {
+		//TODO: change JSON to parameter/value list
                 printf ("Reading Start Channel %s\n" ,out->GetIPAddress().c_str());
                 if (config.isMember(out->GetIPAddress()))
                 {
