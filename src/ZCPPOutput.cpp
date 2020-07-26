@@ -15,13 +15,19 @@
 #include <fstream>
 #include <filesystem>
 
-ZCPPOutput::ZCPPOutput() : _startChannel(0), _channelCount(0)
+ZCPPOutput::ZCPPOutput() : _startChannel(1), _channelCount(0),_sequenceNum(0), _socket(_io_service)
 {
+	memset(&_packet, 0x00, sizeof(_packet));
+
+	memcpy(_packet.Data.Header.token, ZCPP_token, sizeof(ZCPP_token));
+	_packet.Data.Header.type = ZCPP_TYPE_DATA;
+	_packet.Data.Header.protocolVersion = ZCPP_CURRENT_PROTOCOL_VERSION;
+	_packet.Data.priority = 100;
 }
 
 ZCPPOutput::~ZCPPOutput()
 {
-
+	_socket.close();
 }
 
 bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
@@ -36,9 +42,10 @@ bool ZCPPOutput::ReadConfig(std::string const& zcppFile)
 	replaceAll(ip, "_", ".");
 	_ipAddress = ip;
 	
+	_remote_endpoint = udp::endpoint(address::from_string(_ipAddress), ZCPP_PORT);
+	
 	return true;
 }
-
 
 bool ZCPPOutput::SendConfig( bool sendExtra)
 {
@@ -47,14 +54,31 @@ bool ZCPPOutput::SendConfig( bool sendExtra)
 		if(_ipAddress.empty())
 			return false;
 		
-		asio::io_context io_context;
+		if(!IsOpen())
+			Open();
 
-		asio::io_service io_service;
-		udp::socket socket(io_service);
-		udp::endpoint remote_endpoint = udp::endpoint(address::from_string(_ipAddress), ZCPP_PORT);
-		socket.open(udp::v4());
+		sendConfigFile(sendExtra);
+		return true;
+	}
+	catch(std::exception ex)
+	{
+		std::cout << ex.what();
+	}
+	
+	return false;
+}
 
-		sendConfigFile(socket, remote_endpoint, sendExtra);
+bool ZCPPOutput::SendData( unsigned char *data)
+{
+	try
+	{
+		if(_ipAddress.empty())
+			return false;
+
+		if(!IsOpen())
+			Open();
+
+		outputData(data );
 		return true;
 	}
 	catch(std::exception ex)
@@ -153,7 +177,7 @@ bool ZCPPOutput::readFile(std::string const& file)
 	return false;
 }
 
-void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint, bool sendExtra)
+void ZCPPOutput::sendConfigFile(bool sendExtra)
 {
 	for (auto it = _modelData.begin(); it != _modelData.end(); ++it) {
 		auto it2 = it;
@@ -169,7 +193,7 @@ void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remot
 			(*it)->Configuration.flags |= ZCPP_CONFIG_FLAG_EXTRA_DATA_WILL_FOLLOW;
 		}
 		asio::error_code err;
-		auto sent = socket.send_to(asio::buffer(*it, ZCPP_GetPacketActualSize(**it)), remote_endpoint, 0, err);
+		auto sent = _socket.send_to(asio::buffer(*it, ZCPP_GetPacketActualSize(**it)), _remote_endpoint, 0, err);
 
 		std::cout << "Sent Configuration Payload --- " << sent << "\n";
 	}
@@ -184,10 +208,40 @@ void ZCPPOutput::sendConfigFile(udp::socket & socket, udp::endpoint const& remot
 				(*it)->ExtraData.flags |= ZCPP_CONFIG_FLAG_LAST;
 			}
 			asio::error_code err;
-			auto sent = socket.send_to(asio::buffer(*it, ZCPP_GetPacketActualSize(**it)), remote_endpoint, 0, err);
+			auto sent = _socket.send_to(asio::buffer(*it, ZCPP_GetPacketActualSize(**it)), _remote_endpoint, 0, err);
 
 			std::cout << "Sent ExtraData Payload --- " << sent << "\n";
 		}
+	}
+}
+
+void ZCPPOutput::outputData( unsigned char *data)
+{
+	//if (_channelCount == 0) {
+	//	_data = nullptr;
+	//}
+	//else {
+	//	_data = (unsigned char*)malloc(_channelCount);
+	//	if (_data != nullptr) memset(_data, &data, _channelCount);
+	//}
+	_sequenceNum = _sequenceNum == 255 ? 0 : _sequenceNum + 1;
+
+	long i = 0;
+	while (i < _channelCount) {
+		_packet.Data.sequenceNumber = _sequenceNum;
+		uint32_t startAddress = i;
+		_packet.Data.frameAddress = ntohl(startAddress);
+		uint16_t packetlen = _channelCount - i > sizeof(ZCPP_packet_t) - ZCPP_DATA_HEADER_SIZE ? sizeof(ZCPP_packet_t) - ZCPP_DATA_HEADER_SIZE : _channelCount - i;
+		_packet.Data.flags =  0x00 +
+			(i + packetlen == _channelCount ? ZCPP_DATA_FLAG_LAST : 0x00) +
+			(i == 0 ? ZCPP_DATA_FLAG_FIRST : 0x00);
+		_packet.Data.packetDataLength = ntohs(packetlen);
+		memcpy(_packet.Data.data, data + i + _startChannel, packetlen);
+
+		asio::error_code err;
+		auto sent = _socket.send_to(asio::buffer(&_packet, ZCPP_GetPacketActualSize(_packet)), _remote_endpoint, 0, err);
+		std::cout << "Sent Data Payload --- " << sent << "\n";
+		i += packetlen;
 	}
 }
 

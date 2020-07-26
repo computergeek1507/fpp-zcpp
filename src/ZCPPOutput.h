@@ -29,7 +29,13 @@ public:
     bool SendConfig(bool sendExtra = true);
     bool ReadConfig(std::string const& file);
     std::string GetIPAddress(){return _ipAddress;}
+    bool SendData( unsigned char *data);
     unsigned int GetChannelCount(){return _channelCount;}
+    unsigned int GetStartChannel(){return _startChannel;}
+    void SetStartChannel(unsigned int startChannel){ _startChannel = startChannel;}
+
+    bool IsOpen() {return _socket.is_open();}
+    void Open() {_socket.open(udp::v4());}
 
 private:
 
@@ -38,9 +44,19 @@ private:
     std::string _ipAddress;
     std::list<ZCPP_packet_t*> _extraConfig;
     std::list<ZCPP_packet_t*> _modelData;
-    
+
+    asio::io_service _io_service;
+    udp::socket _socket;
+    udp::endpoint _remote_endpoint;
+
+    uint8_t* _data = nullptr;
+    ZCPP_packet_t _packet;
+    uint8_t _sequenceNum = 0;
+
     void ExtractUsedChannelsFromModelData();
-    void replaceAll(std::string& str, const std::string& from, const std::string& to);
-    void sendConfigFile(udp::socket & socket, udp::endpoint const& remote_endpoint, bool sendExtra);
+    void outputData( unsigned char *data);
+    void sendConfigFile( bool sendExtra);
     bool readFile(std::string const& file);
+
+    void replaceAll(std::string& str, const std::string& from, const std::string& to);
 };

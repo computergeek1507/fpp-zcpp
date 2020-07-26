@@ -23,16 +23,16 @@ function gobutton() {
  while (!feof($fp)){
   $line = fgets($fp);
   if (strlen($line) > 1) { 
-  list($ip, $size) = explode(",", $line);
-  $tableControllers[] = array($ip, $size);
+  list($ip, $start, $size) = explode(",", $line);
+  $tableControllers[] = array($ip, $start, $size);
   }
  }
  fclose($fp);
  print "<table border='1' cellspacing='0' cellpadding='3'>";
- print "<tr><td>IP</td><td>Size</td></tr>";
+ print "<tr><td>IP</td><td>Start</td><td>Size</td></tr>";
  foreach($tableControllers as $controller)
  {
-	  print "<tr><td>{$controller[0]}</td><td>{$controller[1]}</td></tr>";
+	  print "<tr><td>{$controller[0]}</td><td>{$controller[1]}</td><td>{$controller[2]}</td></tr>";
  }
   print "</table>";
  
@@ -41,7 +41,7 @@ function gobutton() {
 
 <h4>About</h4>
 <p>
-The FPP ZCPP plugin will send the ZCPP Config data to the controller based on the xLights ZCPP Files.
+The FPP ZCPP plugin will send the ZCPP data to the controller based on the xLights ZCPP Files.
 <p>
 
 </fieldset>

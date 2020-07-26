@@ -40,6 +40,7 @@ class FPPZcppPlugin : public FPPPlugin, public httpserver::http_resource {
 private:
     std::vector<std::unique_ptr <ZCPPOutput>> _zcppOutputs;
     int sequenceCount;
+    Json::Value config;
 
 public:
 
@@ -63,6 +64,7 @@ public:
 #else
     virtual void modifySequenceData(int ms, uint8_t *seqData) override {
 #endif
+        sendChannelData(seqData);
         if(sequenceCount==0)
             sendConfigFileNow();
         ++sequenceCount;
@@ -86,6 +88,14 @@ public:
             output->SendConfig(sendExtra);
         }
     }
+
+    void sendChannelData(unsigned char *data) {
+        for(auto & output: _zcppOutputs)
+        {
+            printf ("Sending Data %s\n" ,output->GetIPAddress().c_str());
+            output->SendData(data);
+        }
+    }
     
     void saveDataToFile()
     {
@@ -95,6 +105,8 @@ public:
         for(auto & out: _zcppOutputs)
         {
             outfile << out->GetIPAddress();
+            outfile <<  ",";
+            outfile << out->GetStartChannel();
             outfile <<  ",";
             outfile << out->GetChannelCount();
             outfile <<  "\n";
@@ -140,6 +152,22 @@ public:
         }
         else{
             printf ("No ZCPP Configs found\n");
+        }
+
+        if (LoadJsonFromFile("/home/fpp/media/config/fpp-zcpp-plugin.json", config)) {
+            for(auto & out: _zcppOutputs)
+            {
+                printf ("Reading Start Channel %s\n" ,out->GetIPAddress().c_str());
+                if (config.isMember(out->GetIPAddress()))
+                {
+                    out->SetStartChannel(config[out->GetIPAddress()].asInt());
+                    printf ("Setting Start Channel %d\n",out->GetStartChannel() );
+                }
+                else
+                {
+                    printf ("No Start Channel Setting Found\n" );
+                }
+            }
         }
         
         saveDataToFile();
