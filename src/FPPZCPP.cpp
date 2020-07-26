@@ -64,15 +64,22 @@ public:
 #else
     virtual void modifySequenceData(int ms, uint8_t *seqData) override {
 #endif
-        sendChannelData(seqData);
-        if(sequenceCount==0)
-            sendConfigFileNow();
-        ++sequenceCount;
-        if(sequenceCount > 3000)
-        {
-            sendConfigFileNow();
-            sequenceCount = 1;
-        }
+		try
+		{
+			sendChannelData(seqData);
+			if(sequenceCount==0)
+				sendConfigFileNow();
+			++sequenceCount;
+			if(sequenceCount > 3000)
+			{
+				sendConfigFileNow();
+				sequenceCount = 1;
+			}
+		}
+		catch(std::exception ex)
+		{
+			std::cout << ex.what();
+		}
     }
 
     virtual void playlistCallback(const Json::Value &playlist, const std::string &action, const std::string &section, int item) {
